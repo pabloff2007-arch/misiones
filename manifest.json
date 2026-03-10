@@ -2,7 +2,7 @@
   "name": "Misiones Secundarias",
   "short_name": "Misiones",
   "description": "Una misión aleatoria para salir de la rutina",
-  "start_url": "/misiones/",
+  "start_url": "/Misiones/",
   "display": "standalone",
   "background_color": "#111111",
   "theme_color": "#111111",
