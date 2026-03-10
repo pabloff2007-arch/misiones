@@ -1,10 +1,10 @@
 const CACHE = 'misiones-v1';
 const ASSETS = [
-  '/misiones/',
-  '/misiones/index.html',
-  '/misiones/manifest.json',
-  '/misiones/icon-192.png',
-  '/misiones/icon-512.png'
+  '/Misiones/',
+  '/Misiones/index.html',
+  '/Misiones/manifest.json',
+  '/Misiones/icon-192.png',
+  '/Misiones/icon-512.png'
 ];
 
 self.addEventListener('install', e => {
