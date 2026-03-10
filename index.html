@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Misiones Secundarias</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#111111">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Misiones">
+  <link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #111; color: #e0dbd4;
+    font-family: Georgia, serif;
+    min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 32px 20px 60px;
+  }
+  .header { text-align: center; margin-bottom: 28px; }
+  .header .sup { font-size: 10px; letter-spacing: 4px; color: #444; text-transform: uppercase; margin-bottom: 8px; }
+  .header h1 { font-size: 28px; font-weight: normal; color: #e0dbd4; }
+  .header .count { margin-top: 6px; font-size: 12px; color: #444; min-height: 18px; }
+
+  .filters { display: flex; gap: 7px; flex-wrap: wrap; justify-content: center; margin-bottom: 28px; max-width: 500px; }
+  .ftag { background: transparent; border: 1px solid #2a2a2a; color: #555; border-radius: 20px; padding: 5px 13px; font-size: 11px; cursor: pointer; font-family: Georgia, serif; transition: all 0.15s; }
+  .ftag:hover { border-color: #444; color: #888; }
+  .ftag.active { background: #e0dbd4; border-color: #e0dbd4; color: #111; }
+  .ftag.tag-Explorar.active  { background:#1a2a1a; border-color:#2a4a2a; color:#6abf6a; }
+  .ftag.tag-Estilo.active    { background:#2a1a2a; border-color:#4a2a4a; color:#c06abf; }
+  .ftag.tag-Cuerpo.active    { background:#1a2a2a; border-color:#2a4a4a; color:#6abfbf; }
+  .ftag.tag-Mente.active     { background:#2a2a1a; border-color:#4a4a2a; color:#bfbf6a; }
+  .ftag.tag-Social.active    { background:#2a1a1a; border-color:#4a2a2a; color:#bf6a6a; }
+  .ftag.tag-Crear.active     { background:#1a1a2a; border-color:#2a2a4a; color:#6a6abf; }
+  .ftag.tag-Comida.active    { background:#2a1f1a; border-color:#4a3a2a; color:#bf956a; }
+  .ftag.tag-Reto.active      { background:#2a2218; border-color:#4a3a20; color:#d4a840; }
+
+  .card { width:100%; max-width:440px; min-height:190px; border-radius:12px; padding:32px 28px; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; margin-bottom:20px; transition:opacity 0.25s, background 0.3s, border-color 0.3s; border:1px solid #222; background:#191919; }
+  .card.fade { opacity:0; }
+  .card .c-emoji { font-size:40px; margin-bottom:14px; }
+  .card .c-tag { font-size:10px; letter-spacing:3px; text-transform:uppercase; margin-bottom:12px; opacity:0.7; }
+  .card .c-text { font-size:16px; line-height:1.65; color:#e0dbd4; }
+  .card .c-empty { color:#2a2a2a; font-size:14px; }
+
+  .btns { display:flex; flex-direction:column; gap:9px; width:100%; max-width:440px; }
+  .btn-main { width:100%; padding:14px; background:#e0dbd4; border:none; border-radius:8px; color:#111; font-size:14px; cursor:pointer; font-family:Georgia,serif; letter-spacing:1px; transition:opacity 0.15s; }
+  .btn-main:hover { opacity:0.88; }
+  .btn-main:disabled { background:#191919; color:#2a2a2a; cursor:default; opacity:1; }
+  .btn-done { width:100%; padding:11px; background:transparent; border-radius:8px; font-size:13px; cursor:pointer; font-family:Georgia,serif; transition:all 0.15s; display:none; border:1px solid #333; }
+  .btn-done:hover { opacity:0.8; }
+
+  .done-section { margin-top:40px; width:100%; max-width:440px; }
+  .done-title { font-size:10px; letter-spacing:3px; color:#2a2a2a; text-transform:uppercase; text-align:center; margin-bottom:12px; }
+  .done-list { display:flex; flex-direction:column; gap:6px; }
+  .done-item { background:#161616; border:1px solid #1c1c1c; border-radius:6px; padding:10px 14px; display:flex; gap:10px; align-items:center; }
+  .done-item .de { font-size:15px; }
+  .done-item .dt { font-size:12px; color:#3a3a3a; line-height:1.4; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="sup">misiones secundarias</div>
+  <h1>¿Qué hago hoy?</h1>
+  <div class="count" id="count"></div>
+</div>
+
+<div class="filters" id="filters"></div>
+
+<div class="card" id="card">
+  <div class="c-empty">Pulsa el botón para tu primera misión</div>
+</div>
+
+<div class="btns">
+  <button class="btn-main" id="btn-new" onclick="newMission()">Dame una misión</button>
+  <button class="btn-done" id="btn-done" onclick="markDone()">✓ Misión completada</button>
+</div>
+
+<div class="done-section" id="done-section" style="display:none">
+  <div class="done-title">Completadas</div>
+  <div class="done-list" id="done-list"></div>
+</div>
+
+<script>
+const missions = [
+
+// ══════════════════════════════════════════
+// EXPLORAR (45)
+// ══════════════════════════════════════════
+{e:"☕",t:"Explorar",m:"Entra en una cafetería que nunca hayas pisado y pide algo sin mirar el precio."},
+{e:"🗺️",t:"Explorar",m:"Toma un camino diferente al de siempre para ir a clase. Aunque tardes 5 minutos más."},
+{e:"🏛️",t:"Explorar",m:"Entra en un edificio de A Coruña que siempre hayas visto por fuera pero nunca por dentro."},
+{e:"📍",t:"Explorar",m:"Abre Google Maps, cierra los ojos, pon el dedo en un punto cercano y ve a ver qué hay."},
+{e:"🌅",t:"Explorar",m:"Ve a ver el amanecer mañana. Pon el despertador esta noche."},
+{e:"🎲",t:"Explorar",m:"Entra en la primera tienda que veas que nunca hayas entrado. Solo a mirar."},
+{e:"🚌",t:"Explorar",m:"Coge un autobús al azar hasta el final de su línea y vuelve andando o en otro."},
+{e:"🌊",t:"Explorar",m:"Ve al paseo marítimo fuera de tu hora habitual. A Coruña a las 7am o a las 11pm es otro sitio."},
+{e:"📚",t:"Explorar",m:"Ve a la biblioteca y coge un libro de una sección donde nunca hayas buscado."},
+{e:"🎭",t:"Explorar",m:"Mira la cartelera de A Coruña y ve a algún evento cultural gratuito esta semana."},
+{e:"🌳",t:"Explorar",m:"Ve al parque de Santa Margarita o al Monte de San Pedro y siéntate 20 minutos sin el móvil."},
+{e:"🏪",t:"Explorar",m:"Visita una tienda de segunda mano o mercadillo. No tienes que comprar nada."},
+{e:"🌙",t:"Explorar",m:"Da un paseo nocturno por un barrio que conozcas de día pero no de noche."},
+{e:"🖼️",t:"Explorar",m:"Visita el Museo de Bellas Artes o cualquier galería con entrada gratuita."},
+{e:"⛵",t:"Explorar",m:"Ve al puerto y observa los barcos durante 15 minutos. Sin prisa."},
+{e:"🏘️",t:"Explorar",m:"Explora un barrio que nunca hayas recorrido a fondo: Ciudad Vieja, Orzán, Monte Alto..."},
+{e:"🌄",t:"Explorar",m:"Busca el mejor mirador de la ciudad que no hayas visitado todavía y ve hoy."},
+{e:"🎪",t:"Explorar",m:"Busca si hay algún mercado, feria o evento en A Coruña este fin de semana y ve."},
+{e:"🌿",t:"Explorar",m:"Sal al campo o a las afueras de la ciudad. Aunque sea 1 hora. Necesitas verde."},
+{e:"🏖️",t:"Explorar",m:"Ve a una playa diferente a la que sueles ir. Galicia tiene cientos."},
+{e:"🔦",t:"Explorar",m:"Sal a dar un paseo solo con lo que puedas llevar en los bolsillos. Sin mochila."},
+{e:"🎡",t:"Explorar",m:"Busca en internet qué sitio curioso hay en A Coruña que no conozcas. Ve esta semana."},
+{e:"🚶",t:"Explorar",m:"Camina durante 1 hora sin destino fijo. Gira donde te apetezca."},
+{e:"📖",t:"Explorar",m:"Siéntate en un banco de una plaza concurrida y observa a la gente durante 20 minutos."},
+{e:"🌁",t:"Explorar",m:"Busca un día de niebla en A Coruña y sal a pasear por el paseo marítimo con ella."},
+{e:"🏔️",t:"Explorar",m:"Busca una ruta de senderismo corta cerca de A Coruña y hazla este fin de semana."},
+{e:"🚂",t:"Explorar",m:"Coge un tren de cercanías a un pueblo cercano, da una vuelta y vuelve."},
+{e:"📷",t:"Explorar",m:"Sal a fotografia con el móvil con la temática 'lo que nadie mira'. Puertas, suelos, esquinas."},
+{e:"🌺",t:"Explorar",m:"Encuentra el jardín o parque menos conocido de tu ciudad y pasa allí una tarde."},
+{e:"🏚️",t:"Explorar",m:"Busca arquitectura curiosa en tu ciudad: edificios raros, murales, esculturas escondidas."},
+{e:"🌻",t:"Explorar",m:"Visita un mercado de agricultores o de productos locales este fin de semana."},
+{e:"🛤️",t:"Explorar",m:"Busca el camino más largo posible para llegar a la uni y úsalo una mañana."},
+{e:"🎠",t:"Explorar",m:"Encuentra un sitio con vistas que no hayas descubierto todavía y ve a verlas."},
+{e:"🌌",t:"Explorar",m:"Sal a ver las estrellas esta noche desde un punto con poca luz artificial."},
+{e:"🏄",t:"Explorar",m:"Infórmate sobre surf o bodyboard en A Coruña. Hay escuelas con clases de prueba baratas."},
+{e:"🎻",t:"Explorar",m:"Busca si hay algún concierto gratuito en la ciudad esta semana: plazas, auditorios, bares."},
+{e:"🦅",t:"Explorar",m:"Ve a observar aves en algún espacio natural cerca de A Coruña. Solo con los ojos o unos prismáticos."},
+{e:"🌮",t:"Explorar",m:"Busca el restaurante con mejor relación calidad-precio que no hayas probado aún. Ve."},
+{e:"🗿",t:"Explorar",m:"Encuentra una estatua, monumento o escultura pública de A Coruña que no conozcas y lee su historia."},
+{e:"🎑",t:"Explorar",m:"Ve a ver la puesta de sol desde un sitio diferente al que sueles. Busca un buen ángulo."},
+{e:"🏊",t:"Explorar",m:"Si hace bueno, báñate en el mar aunque sea 5 minutos. El agua fría de Galicia también cuenta."},
+{e:"🗺️",t:"Explorar",m:"Descarga un mapa offline de tu ciudad y explora sin conexión. Que te pierda el mapa, no el GPS."},
+{e:"🌧️",t:"Explorar",m:"La próxima vez que llueva fuerte, sal a dar un paseo bajo la lluvia. Con paraguas o sin él."},
+{e:"🏋️",t:"Explorar",m:"Visita un sitio de A Coruña con historia: el Castillo de San Antón, la Torre de Hércules de cerca..."},
+{e:"🌠",t:"Explorar",m:"Busca si hay algún evento astronómico visible esta semana: lluvia de estrellas, eclipse, conjunción."},
+
+// ══════════════════════════════════════════
+// CUERPO (40)
+// ══════════════════════════════════════════
+{e:"🏃",t:"Cuerpo",m:"Sal a correr 2 km ahora. No hace falta equipación especial. Solo zapatillas."},
+{e:"🧘",t:"Cuerpo",m:"Haz 10 minutos de estiramiento antes de dormir. Busca 'stretching 10 min' en YouTube."},
+{e:"🚴",t:"Cuerpo",m:"Ve a algún sitio hoy andando o en bici en vez de en transporte."},
+{e:"💧",t:"Cuerpo",m:"Bebe 2 litros de agua hoy. Pon un recordatorio en el móvil cada hora si hace falta."},
+{e:"🌬️",t:"Cuerpo",m:"5 minutos de respiración consciente ahora mismo. Inhala 4s, aguanta 4s, exhala 4s."},
+{e:"🤸",t:"Cuerpo",m:"Haz 3 series de 10 flexiones en algún momento del día. Puedes hacerlas de rodillas."},
+{e:"🛌",t:"Cuerpo",m:"Acuéstate antes de las 23:00 esta noche. Mañana lo notarás."},
+{e:"☀️",t:"Cuerpo",m:"Sal 20 minutos al sol antes de las 11 o después de las 17. Sin pantalla."},
+{e:"🧴",t:"Cuerpo",m:"Ducha de agua fría los últimos 30 segundos. Activa y despierta de verdad."},
+{e:"🪑",t:"Cuerpo",m:"Cada hora de estudio, levántate 5 minutos y muévete. Ponlo de temporizador."},
+{e:"🏋️",t:"Cuerpo",m:"Busca en YouTube 'workout sin material 20 min' y hazlo ahora en tu habitación."},
+{e:"🦶",t:"Cuerpo",m:"Camina descalzo/a por casa durante toda la tarde."},
+{e:"🧂",t:"Cuerpo",m:"Come sin sal añadida hoy. Solo para notar la diferencia."},
+{e:"🌊",t:"Cuerpo",m:"Si hace algo de tiempo, acércate al mar hoy aunque sea 15 minutos."},
+{e:"🏊",t:"Cuerpo",m:"Si hay piscina municipal cerca, mira el horario y ve esta semana."},
+{e:"🧗",t:"Cuerpo",m:"Busca si hay un rocódromo en A Coruña y apúntate a una sesión de iniciación."},
+{e:"🚶",t:"Cuerpo",m:"Da un paseo de 30 minutos sin el móvil en la mano. Solo mirar."},
+{e:"🎾",t:"Cuerpo",m:"Busca unas pistas de pádel o tenis municipales y ve a golpear la pelota aunque sea media hora."},
+{e:"🧹",t:"Cuerpo",m:"Limpia tu habitación a fondo. Mover muebles, barrer debajo. Quema calorías y despejas la cabeza."},
+{e:"🛹",t:"Cuerpo",m:"Si tienes monopatín, patines o similar, sácalos y rodea una manzana."},
+{e:"🌿",t:"Cuerpo",m:"Haz una caminata de 5 km este fin de semana. Sin cronómetro, sin ritmo. Solo caminar."},
+{e:"🏇",t:"Cuerpo",m:"Busca una clase de prueba de algo que nunca hayas hecho: yoga, boxeo, escalada, baile."},
+{e:"💪",t:"Cuerpo",m:"Haz una tabla de abdominales: 3x15 crunch, 3x10 elevación de piernas, 1 min plancha."},
+{e:"🚣",t:"Cuerpo",m:"Infórmate sobre kayak o piragüismo en A Coruña. Hay rutas por la ría muy accesibles."},
+{e:"🌅",t:"Cuerpo",m:"Sal a correr o caminar justo al amanecer una mañana esta semana."},
+{e:"🛁",t:"Cuerpo",m:"Date un baño largo esta noche. Sin móvil dentro del baño."},
+{e:"🧠",t:"Cuerpo",m:"Duerme 8 horas completas esta noche. Sin alarma si puedes."},
+{e:"🏸",t:"Cuerpo",m:"Busca a alguien para echar un partido de lo que sea: bádminton, fútbol, frisbee."},
+{e:"🤲",t:"Cuerpo",m:"Haz 5 minutos de automasa en manos, cuello y hombros. Notarás tensión que no sabías que tenías."},
+{e:"🦵",t:"Cuerpo",m:"Haz 50 sentadillas repartidas a lo largo del día. 10 cada vez que pases por la cocina."},
+{e:"🎿",t:"Cuerpo",m:"Busca actividades de naturaleza cerca de A Coruña: senderismo, cicloturismo, kayak."},
+{e:"🌬️",t:"Cuerpo",m:"Practica meditación guiada 10 minutos. App Insight Timer o busca en YouTube."},
+{e:"🏄",t:"Cuerpo",m:"Apúntate a una clase de surf. En la costa gallega hay opciones todo el año."},
+{e:"🧘",t:"Cuerpo",m:"Haz una sesión de yoga de 20 minutos con YouTube. 'Yoga with Adriene' para principiantes."},
+{e:"🦴",t:"Cuerpo",m:"Presta atención a tu postura durante toda la mañana. Cada vez que te encorves, corrígelo."},
+{e:"🌙",t:"Cuerpo",m:"Sin pantallas 1 hora antes de dormir esta noche. Lee, dibuja, escucha música."},
+{e:"🏊",t:"Cuerpo",m:"Nada durante 30 minutos sin parar. Ve a cualquier ritmo, pero sin parar."},
+{e:"🚵",t:"Cuerpo",m:"Busca una ruta de bici por la costa gallega y hazla un fin de semana."},
+{e:"🌡️",t:"Cuerpo",m:"Comprueba cuándo fue la última vez que fuiste al médico. Si ha pasado más de un año, pide cita."},
+{e:"🥤",t:"Cuerpo",m:"No bebas nada con azúcar durante 24 horas. Solo agua, té o café solo."},
+
+// ══════════════════════════════════════════
+// MENTE (42)
+// ══════════════════════════════════════════
+{e:"📵",t:"Mente",m:"Dos horas sin móvil esta tarde. Lo dejas en otra habitación boca abajo."},
+{e:"📖",t:"Mente",m:"Lee 20 páginas de algo que no sea de la carrera antes de dormir."},
+{e:"✏️",t:"Mente",m:"Escribe a mano durante 10 minutos lo que te pase por la cabeza. Sin releer después."},
+{e:"🎧",t:"Mente",m:"Escucha un álbum entero de un artista que no conozcas. De principio a fin, sin saltarte nada."},
+{e:"🧩",t:"Mente",m:"Aprende a hacer una cosa concreta que no sepas: un nudo marinero, una papiroflexia, lo que sea."},
+{e:"📝",t:"Mente",m:"Escribe 3 cosas que te hayan salido bien esta semana. Solo 3, sin más."},
+{e:"🎬",t:"Mente",m:"Ve una película que lleve en tu lista pendiente más de 6 meses. Esta noche."},
+{e:"🗣️",t:"Mente",m:"Escucha un podcast de un tema que no sea el tuyo habitual durante 30 minutos."},
+{e:"📓",t:"Mente",m:"Escribe una lista de 10 cosas que te gustan de tu vida ahora mismo."},
+{e:"🤫",t:"Mente",m:"Pasa 1 hora en completo silencio. Sin música, sin podcast, sin vídeos."},
+{e:"🧠",t:"Mente",m:"Aprende 5 palabras en un idioma que no hables. Lo que sea: japonés, árabe, swahili."},
+{e:"🎯",t:"Mente",m:"Haz una sola cosa a la vez durante toda la mañana. Sin cambiar de tarea hasta terminarla."},
+{e:"💭",t:"Mente",m:"Siéntate 10 minutos sin hacer nada. Sin móvil, sin música. Solo dejar que la mente vague."},
+{e:"🌐",t:"Mente",m:"Entra en Wikipedia, abre un artículo aleatorio y sigue los enlaces durante 30 minutos."},
+{e:"✍️",t:"Mente",m:"Escribe el primer párrafo de una historia que nunca vayas a terminar. Solo el primero."},
+{e:"📰",t:"Mente",m:"Lee las noticias de hoy durante 15 minutos. Solo para saber qué pasa en el mundo."},
+{e:"🔍",t:"Mente",m:"Busca a fondo algo que te dé curiosidad desde hace tiempo y nunca hayas investigado."},
+{e:"📜",t:"Mente",m:"Lee sobre la historia de A Coruña. Busca algo que no supieras."},
+{e:"🎵",t:"Mente",m:"Escucha música clásica durante 30 minutos mientras haces algo. Nota cómo cambia el estado de ánimo."},
+{e:"🖊️",t:"Mente",m:"Escribe una carta a tu yo de dentro de 5 años. Guárdala en algún sitio."},
+{e:"🗓️",t:"Mente",m:"Organiza tu semana el domingo por la noche. 10 minutos de planificación ahorra horas de confusión."},
+{e:"🔢",t:"Mente",m:"Haz un sudoku, crucigrama o cualquier puzzle mental hoy."},
+{e:"📊",t:"Mente",m:"Revisa tus gastos del último mes. Solo para saber en qué se va el dinero."},
+{e:"💡",t:"Mente",m:"Escribe 10 ideas locas sin filtro sobre cualquier tema. Cuanto más raras mejor."},
+{e:"🌍",t:"Mente",m:"Aprende algo básico sobre un país que no conozcas nada. Capital, idioma, algo de historia."},
+{e:"🎤",t:"Mente",m:"Escucha un TED Talk de menos de 15 minutos sobre algo que no tenga nada que ver con tu carrera."},
+{e:"📚",t:"Mente",m:"Elige el próximo libro que vas a leer antes de terminar el que tienes ahora. Que no quede hueco."},
+{e:"🧮",t:"Mente",m:"Intenta recordar y escribir los 10 mejores momentos de este año. Sin mirar el móvil."},
+{e:"🌱",t:"Mente",m:"Aprende algo sobre un tema científico que no sea de tu carrera: geología, astronomía, etología."},
+{e:"✈️",t:"Mente",m:"Planifica un viaje que te gustaría hacer, aunque sea imaginario. Destino, ruta, presupuesto."},
+{e:"🎭",t:"Mente",m:"Lee sobre la vida de alguien que admires. Busca una entrevista larga o un documental."},
+{e:"🗝️",t:"Mente",m:"Escribe cuáles son tus 3 prioridades reales ahora mismo en la vida. No las que deberían ser, las reales."},
+{e:"📿",t:"Mente",m:"Haz una lista de todo lo que te preocupa ahora mismo. Solo escribirlo ya alivia."},
+{e:"🌈",t:"Mente",m:"Recuerda el mejor día del año pasado con todo el detalle que puedas. Escríbelo."},
+{e:"🤔",t:"Mente",m:"Elige una creencia que tengas y pásate 10 minutos intentando demostrar que está equivocada."},
+{e:"📡",t:"Mente",m:"Busca un documental sobre algo que no hayas visto nunca: océanos, física cuántica, historia antigua."},
+{e:"🧬",t:"Mente",m:"Lee un artículo de divulgación científica sobre nanociencia o nanotecnología. Algo reciente."},
+{e:"🏛️",t:"Mente",m:"Aprende sobre algún movimiento artístico que no conozcas: dadaísmo, brutalismo, fluxus."},
+{e:"🔭",t:"Mente",m:"Busca qué planeta está visible esta noche desde España y intenta localizarlo."},
+{e:"🃏",t:"Mente",m:"Aprende un truco de magia simple. YouTube tiene tutoriales de 5 minutos."},
+{e:"🌙",t:"Mente",m:"Escribe antes de dormir 3 cosas por las que estés agradecido/a hoy. Aunque sean pequeñas."},
+{e:"🎲",t:"Mente",m:"Aprende las reglas de un juego de mesa que no conozcas. Aunque no tengas con quien jugarlo todavía."},
+
+// ══════════════════════════════════════════
+// SOCIAL (35)
+// ══════════════════════════════════════════
+{e:"💬",t:"Social",m:"Escríbele a alguien con quien no hayas hablado en meses. Sin motivo concreto."},
+{e:"🍕",t:"Social",m:"Propón a alguien quedar esta semana. Sin dejarlo para 'otro día'."},
+{e:"🎁",t:"Social",m:"Hazle un detalle pequeño a alguien cercano hoy. No tiene que costar dinero."},
+{e:"📞",t:"Social",m:"Llama a alguien de tu familia hoy. Una llamada de verdad, no un mensaje."},
+{e:"🤝",t:"Social",m:"Habla con alguien de clase con quien nunca hayas hablado fuera de clase."},
+{e:"💌",t:"Social",m:"Manda un mensaje a alguien diciéndole algo que valoras de esa persona. En serio."},
+{e:"☕",t:"Social",m:"Invita a alguien a un café. Tú pagas, aunque sean €1.80."},
+{e:"🎮",t:"Social",m:"Organiza una tarde de juegos de mesa o videojuegos con alguien esta semana."},
+{e:"🍳",t:"Social",m:"Cocina algo para alguien más. Aunque sean unos huevos revueltos."},
+{e:"🚶",t:"Social",m:"Propón a alguien dar un paseo sin rumbo esta tarde."},
+{e:"🎵",t:"Social",m:"Manda a alguien una canción que te recuerde a esa persona."},
+{e:"📷",t:"Social",m:"Haz una foto con alguien hoy. No un selfie — una foto de un momento."},
+{e:"🗓️",t:"Social",m:"Organiza un plan con más de dos semanas de antelación. Ponlo en el calendario ya."},
+{e:"🤗",t:"Social",m:"Da un abrazo largo a alguien hoy. De esos que duran más de 3 segundos."},
+{e:"👂",t:"Social",m:"Pregúntale a alguien '¿cómo estás de verdad?' y escucha sin interrumpir."},
+{e:"📝",t:"Social",m:"Escríbele una nota a mano a alguien y déjasela donde la encuentre."},
+{e:"🎂",t:"Social",m:"Mira si hay algún cumpleaños próximo de alguien cercano y planifica algo aunque sea pequeño."},
+{e:"🙏",t:"Social",m:"Da las gracias de verdad a alguien que normalmente das por sentado. Un profesor, un compañero, alguien en casa."},
+{e:"🌮",t:"Social",m:"Organiza una cena o comida en casa con amigos. Que cada uno traiga algo."},
+{e:"🎬",t:"Social",m:"Propón ver una película con alguien esta semana. En persona, no en llamada."},
+{e:"📚",t:"Social",m:"Recomiéndale un libro a alguien que creas que le va a gustar. Cuéntale por qué."},
+{e:"🧩",t:"Social",m:"Juega a algo en grupo esta semana: cartas, juego de mesa, trivial, lo que sea."},
+{e:"🌍",t:"Social",m:"Habla con alguien de un país diferente al tuyo. Erasmus, intercambio, lo que sea."},
+{e:"🎤",t:"Social",m:"Cuéntale a alguien algo que hayas aprendido esta semana que te haya parecido fascinante."},
+{e:"🛒",t:"Social",m:"Ve al mercado o al super con alguien y cocina juntos lo que encontréis."},
+{e:"✉️",t:"Social",m:"Escribe una carta a alguien que viva lejos. Por correo de verdad, con sello."},
+{e:"🎵",t:"Social",m:"Ve a un concierto, aunque sea pequeño y en un bar. Con alguien."},
+{e:"🧠",t:"Social",m:"Ten una conversación de más de 30 minutos sin mirar el móvil ninguno de los dos."},
+{e:"🌱",t:"Social",m:"Regala una planta pequeña a alguien. Cuesta €3 y dura para siempre si la cuidan."},
+{e:"😂",t:"Social",m:"Manda algo que te haya hecho reír de verdad esta semana a alguien que creas que lo necesita."},
+{e:"🍰",t:"Social",m:"Hornea algo y llévaselo a alguien. El gesto vale más que el resultado."},
+{e:"🚀",t:"Social",m:"Cuéntale a alguien un sueño o proyecto que tengas aunque te dé vergüenza. Solo uno."},
+{e:"🎯",t:"Social",m:"Pregúntale a alguien mayor que tú algo que siempre hayas querido saber sobre su vida."},
+{e:"🕯️",t:"Social",m:"Organiza una noche sin pantallas con alguien: velas, música, conversación."},
+{e:"🌺",t:"Social",m:"Coge flores silvestres o compra un ramo pequeño y dáselas a alguien sin motivo."},
+
+// ══════════════════════════════════════════
+// CREAR (45)
+// ══════════════════════════════════════════
+{e:"🖊️",t:"Crear",m:"Dibuja algo en papel ahora mismo. Lo que tengas delante. 5 minutos sin borrar."},
+{e:"📸",t:"Crear",m:"Sal con la intención de hacer 5 fotos buenas. Solo 5, con cuidado y encuadre."},
+{e:"🎵",t:"Crear",m:"Haz una playlist nueva desde cero con 15 canciones que te pongan de buen humor."},
+{e:"✉️",t:"Crear",m:"Escribe una carta a mano a alguien. No la tienes que enviar."},
+{e:"🎨",t:"Crear",m:"Pinta algo con lo que tengas: acuarelas, rotuladores, lo que sea. Sin objetivo."},
+{e:"✂️",t:"Crear",m:"Haz un collage con revistas viejas, recortes o impresiones. 30 minutos."},
+{e:"🪴",t:"Crear",m:"Planta algo: una semilla, un esqueje, cualquier cosa. En un vaso con agua funciona."},
+{e:"📱",t:"Crear",m:"Edita una foto tuya de forma creativa con una app. Algo diferente a lo que harías normalmente."},
+{e:"🧶",t:"Crear",m:"Busca un tutorial de macramé o punto de cruz para principiantes y empieza hoy."},
+{e:"🗒️",t:"Crear",m:"Escribe un microrrelato de exactamente 6 palabras. Luego intenta mejorarlo."},
+{e:"🎙️",t:"Crear",m:"Grábate hablando 2 minutos sobre algo que te interese. Solo para escucharte."},
+{e:"🖼️",t:"Crear",m:"Reorganiza los objetos de tu escritorio de forma más estética. Haz una foto del resultado."},
+{e:"🧁",t:"Crear",m:"Hornea algo sencillo: magdalenas, galletas, pan. El proceso es lo importante."},
+{e:"📐",t:"Crear",m:"Diseña algo en papel: el layout de tu habitación ideal, un logotipo tonto, un personaje."},
+{e:"🎬",t:"Crear",m:"Graba un vídeo corto de algo que encuentres interesante hoy. Sin publicar, solo para ti."},
+{e:"🌿",t:"Crear",m:"Recoge hojas o flores y préndalas en un cuaderno o haz una composición en papel."},
+{e:"🏺",t:"Crear",m:"Modela arcilla de secado al aire. Puedes comprarla por €4 en cualquier tienda."},
+{e:"📝",t:"Crear",m:"Escribe el principio de una canción. No hace falta que suene bien. Solo las palabras."},
+{e:"🖌️",t:"Crear",m:"Pinta una pared de tu habitación o algo de tu escritorio. Algo pequeño, personalizado."},
+{e:"🎭",t:"Crear",m:"Improvisa una historia en voz alta durante 5 minutos. Sin guion, sin parar."},
+{e:"📚",t:"Crear",m:"Crea un marcapáginas hecho a mano para tu libro actual."},
+{e:"🔧",t:"Crear",m:"Repara algo que esté roto en casa. Aunque sea con cinta adhesiva."},
+{e:"🎪",t:"Crear",m:"Monta una pequeña exposición con fotos o dibujos tuyos en tu habitación."},
+{e:"🌈",t:"Crear",m:"Crea una paleta de colores que represente cómo te sientes esta semana. Con pinturas, papeles o rotuladores."},
+{e:"🗺️",t:"Crear",m:"Dibuja un mapa de tu barrio o de un sitio que conozcas bien. A mano, sin mirar."},
+{e:"🎲",t:"Crear",m:"Inventa las reglas de un juego nuevo. Aunque sea absurdo."},
+{e:"🖋️",t:"Crear",m:"Escribe un poema. No tiene que rimar. No tiene que ser bueno. Solo tiene que ser tuyo."},
+{e:"🎸",t:"Crear",m:"Si tienes algún instrumento, toca 15 minutos aunque estés oxidado/a."},
+{e:"📷",t:"Crear",m:"Haz un autorretrato creativo. No un selfie normal — algo con luz, sombra o composición."},
+{e:"🧵",t:"Crear",m:"Cose o repara algo a mano: un botón, un dobladillo, un parche."},
+{e:"🌍",t:"Crear",m:"Diseña el cartel de un evento imaginario que te gustaría que existiera."},
+{e:"🎨",t:"Crear",m:"Haz una pintura abstracta con los colores que más te gusten ahora mismo. Sin pensar."},
+{e:"📖",t:"Crear",m:"Escribe el primer capítulo de un libro que nunca vayas a terminar."},
+{e:"🧪",t:"Crear",m:"Haz un experimento casero sencillo: una vela que se apaga bajo un vaso, un volcán de bicarbonato."},
+{e:"🎵",t:"Crear",m:"Intenta tocar una melodía simple con lo que tengas: vasos de agua, una mesa, lo que sea."},
+{e:"🌻",t:"Crear",m:"Prensa flores entre las páginas de un libro. Dentro de 2 semanas tendrás algo bonito."},
+{e:"📜",t:"Crear",m:"Escribe tu manifiesto personal: qué valoras, qué quieres, qué no tolerarás. Una página."},
+{e:"🏡",t:"Crear",m:"Reorganiza un rincón de tu habitación para que te dé más paz o más energía."},
+{e:"🎁",t:"Crear",m:"Crea un regalo hecho a mano para alguien. Lo que sea, con lo que tengas."},
+{e:"🖊️",t:"Crear",m:"Lleva un diario de sueños durante una semana. Escribe lo que recuerdes cada mañana al despertar."},
+{e:"🎞️",t:"Crear",m:"Haz un álbum de fotos físico con impresiones de fotos que tengas en el móvil."},
+{e:"🔑",t:"Crear",m:"Personaliza algo tuyo: la funda del móvil, una libreta, una mochila. Con lo que tengas."},
+{e:"🌙",t:"Crear",m:"Escribe un guion de 5 minutos de un cortometraje que nunca vayas a rodar."},
+{e:"🎭",t:"Crear",m:"Crea un avatar o personaje que te represente. Dibujado a mano, con descripción incluida."},
+
+// ══════════════════════════════════════════
+// ESTILO (20)
+// ══════════════════════════════════════════
+{e:"👕",t:"Estilo",m:"Ponte algo que tengas en el armario y nunca te hayas puesto. Hoy es el día."},
+{e:"🪞",t:"Estilo",m:"Combina dos prendas que nunca hayas llevado juntas. Sin pensarlo demasiado."},
+{e:"🎨",t:"Estilo",m:"Sal a la calle con un color que normalmente nunca llevarías."},
+{e:"🧣",t:"Estilo",m:"Usa un accesorio que tengas guardado: un cinturón, un pañuelo, unos pendientes."},
+{e:"✂️",t:"Estilo",m:"Cambia algo pequeño en tu apariencia hoy — el peinado, cómo llevas la ropa."},
+{e:"👟",t:"Estilo",m:"Saca los zapatos o zapatillas que menos uses y llévalos hoy."},
+{e:"🛍️",t:"Estilo",m:"Entra en una tienda de segunda mano y elige una prenda de menos de €5."},
+{e:"🧴",t:"Estilo",m:"Cuídate más de lo normal esta noche: ducha larga, crema, lo que normalmente saltas."},
+{e:"📸",t:"Estilo",m:"Hazte una foto con el outfit de hoy antes de salir. No tienes que publicarla."},
+{e:"🪡",t:"Estilo",m:"Repara o personaliza algo de ropa: un botón caído, un parche, bordado a mano."},
+{e:"🎩",t:"Estilo",m:"Lleva algo que nunca llevarías por miedo al qué dirán. Un sombrero, un color, un estampado."},
+{e:"👜",t:"Estilo",m:"Ordena y limpia tu mochila o bolso a fondo. Saca lo que no necesitas."},
+{e:"🧹",t:"Estilo",m:"Haz una limpieza de armario. Saca todo lo que no te hayas puesto en 1 año."},
+{e:"🌿",t:"Estilo",m:"Prueba un perfume o colonia diferente hoy. Aunque sea de alguien de casa."},
+{e:"💇",t:"Estilo",m:"Hazte algo diferente en el pelo hoy. Trenza, moño, diferente raya, lo que sea."},
+{e:"🧦",t:"Estilo",m:"Ponte los calcetines más llamativos que tengas. Es pequeño pero cambia algo."},
+{e:"🪒",t:"Estilo",m:"Cuídate el look de forma más cuidadosa de lo normal esta mañana. Aunque no salgas."},
+{e:"🎀",t:"Estilo",m:"Añade un elemento decorativo a tu look que nunca uses: un broche, un clip, una cadena."},
+{e:"👗",t:"Estilo",m:"Inspírate en un estilo que no sea el tuyo y crea un outfit con lo que tienes."},
+{e:"🪞",t:"Estilo",m:"Mírate al espejo y di 3 cosas que te gusten de cómo te ves hoy. En voz alta."},
+
+// ══════════════════════════════════════════
+// COMIDA (25)
+// ══════════════════════════════════════════
+{e:"🛒",t:"Comida",m:"Ve al super y compra un alimento que nunca hayas probado. Cocínalo esta noche."},
+{e:"🍳",t:"Comida",m:"Cocina algo que nunca hayas hecho antes. Busca una receta con menos de 5 ingredientes."},
+{e:"🥗",t:"Comida",m:"Come sin mirar ninguna pantalla en toda la comida. Solo la comida."},
+{e:"🍜",t:"Comida",m:"Pide comida de un restaurante de una cocina que nunca hayas probado: etíope, vietnamita, georgiana."},
+{e:"🫖",t:"Comida",m:"Prepárate un té o infusión y tómatelo despacio, sentado/a, sin prisa."},
+{e:"🧑‍🍳",t:"Comida",m:"Cocina la receta favorita de alguien cercano. Pídele que te la explique."},
+{e:"🥐",t:"Comida",m:"Desayuna algo diferente a lo de siempre mañana. Sal a desayunar fuera si puedes."},
+{e:"🌶️",t:"Comida",m:"Come algo más picante de lo que sueles. Solo para probar dónde está tu límite."},
+{e:"🍱",t:"Comida",m:"Prepara el tupper para mañana esta noche. Algo que te apetezca de verdad."},
+{e:"🫙",t:"Comida",m:"Fermenta algo sencillo: yogur casero, chucrut con col. Solo para ver qué pasa."},
+{e:"🥘",t:"Comida",m:"Cocina algo en olla que necesite al menos 1 hora de cocción. El proceso te relaja."},
+{e:"🍰",t:"Comida",m:"Hornea un bizcocho o unas galletas. Come una caliente recién salida del horno."},
+{e:"🌮",t:"Comida",m:"Monta una cena temática solo/a o con alguien: mexicana, japonesa, italiana."},
+{e:"🥑",t:"Comida",m:"Come algo que nunca hayas probado y que siempre hayas tenido pereza de probar."},
+{e:"🍵",t:"Comida",m:"Prepara el desayuno mañana con más cuidado del habitual. Que sea algo que te apetezca de verdad."},
+{e:"🧆",t:"Comida",m:"Cocina algo de la cocina gallega que nunca hayas hecho: empanada, caldo gallego, pulpo."},
+{e:"🍫",t:"Comida",m:"Cómete algo que te guste sin ningún tipo de culpa. Con atención plena, saboreándolo."},
+{e:"🥦",t:"Comida",m:"Come solo verduras y legumbres hoy. Sin carne, sin procesados. Un día."},
+{e:"🫕",t:"Comida",m:"Inventa una receta con lo que tengas en la nevera. Sin buscar en internet."},
+{e:"🧃",t:"Comida",m:"Haz un zumo o batido con fruta real. Sin tetra brik."},
+{e:"🍣",t:"Comida",m:"Aprende a hacer sushi básico en casa. Arroz, alga nori, lo que tengas. Sale muy barato."},
+{e:"🥞",t:"Comida",m:"Haz tortitas para desayunar este fin de semana. La receta básica es harina, huevo y leche."},
+{e:"🍲",t:"Comida",m:"Cocina para varios días a la vez. Prep de tupper de toda la semana en un domingo."},
+{e:"🌿",t:"Comida",m:"Planta hierbas aromáticas en un vaso: albahaca, cebollino, menta. Las usarás para cocinar."},
+{e:"🎂",t:"Comida",m:"Hornea un pastel para alguien sin que sea su cumpleaños ni ninguna ocasión especial."},
+
+// ══════════════════════════════════════════
+// RETO (30)
+// ══════════════════════════════════════════
+{e:"😶",t:"Reto",m:"Pasa un día entero sin quejarte de nada. Cada vez que vayas a hacerlo, para."},
+{e:"🤐",t:"Reto",m:"No uses el móvil hasta las 12:00 mañana. El despertador no cuenta."},
+{e:"💶",t:"Reto",m:"No gastes ni un euro durante 48 horas. Solo lo que ya tienes."},
+{e:"🔇",t:"Reto",m:"Silencia todas las notificaciones durante 24 horas. Las lees tú cuando quieras, no cuando ellas avisen."},
+{e:"😊",t:"Reto",m:"Di algo amable a cada persona con la que interactúes hoy. Sin excepción."},
+{e:"🌅",t:"Reto",m:"Levántate a las 7:00 durante 3 días seguidos, aunque no tengas clase."},
+{e:"📵",t:"Reto",m:"No uses redes sociales durante 48 horas. Ni para 'echar un vistazo rápido'."},
+{e:"🎲",t:"Reto",m:"Di que sí a lo próximo que te propongan, aunque no te apetezca. Dentro de lo razonable."},
+{e:"🗣️",t:"Reto",m:"Habla con un desconocido hoy. Aunque sea comentar algo al cajero o preguntar la hora."},
+{e:"📝",t:"Reto",m:"Escribe a mano durante 30 minutos seguidos sin levantar el bolígrafo del papel."},
+{e:"🧹",t:"Reto",m:"Tira o dona 10 cosas que tengas y no uses. Ahora, sin pensarlo demasiado."},
+{e:"🌙",t:"Reto",m:"Acuéstate a las 22:00 esta noche. Sin excusas."},
+{e:"🏃",t:"Reto",m:"Corre 5 km sin parar. Aunque sea lento. El ritmo no importa, parar sí."},
+{e:"🤳",t:"Reto",m:"Borra de tu móvil la app que más tiempo te roba. Al menos por una semana."},
+{e:"💬",t:"Reto",m:"Llama en vez de escribir a las 3 próximas personas con las que tengas que hablar."},
+{e:"🧊",t:"Reto",m:"Termina la ducha con 1 minuto de agua fría durante 7 días seguidos."},
+{e:"📖",t:"Reto",m:"Lee 50 páginas seguidas sin parar. Sin música, sin pausas, sin móvil."},
+{e:"🥗",t:"Reto",m:"Come sano durante 5 días seguidos. Sin ultraprocesados, sin alcohol, sin azúcar añadido."},
+{e:"😴",t:"Reto",m:"Duerme 8 horas exactas durante 3 noches seguidas. Mismo horario."},
+{e:"🎯",t:"Reto",m:"Haz la tarea más difícil o aburrida que tengas pendiente. La primera, antes de cualquier otra cosa."},
+{e:"🔕",t:"Reto",m:"Deja el móvil en casa durante una salida entera. Que dure al menos 2 horas."},
+{e:"🌊",t:"Reto",m:"Báñate en el mar en Galicia en invierno. 5 minutos. Te cambia la perspectiva."},
+{e:"🧠",t:"Reto",m:"Aprende algo nuevo completamente desde cero durante 30 minutos al día durante una semana."},
+{e:"🙅",t:"Reto",m:"Di que no a algo que normalmente aceptarías por no molestar. Practica el límite."},
+{e:"🤝",t:"Reto",m:"Pide ayuda en algo en lo que normalmente te las apañas solo/a."},
+{e:"🎤",t:"Reto",m:"Cuéntale a alguien un miedo o inseguridad que tengas. Solo una persona, solo una vez."},
+{e:"📊",t:"Reto",m:"Registra todo lo que comas durante 3 días. Sin juzgar, solo para ver."},
+{e:"🌿",t:"Reto",m:"Pasa un día entero sin quejarte del tiempo. Vive cada clima como viene."},
+{e:"⏰",t:"Reto",m:"Usa la técnica Pomodoro durante un día entero de estudio: 25 min trabajo, 5 min descanso."},
+{e:"🚫",t:"Reto",m:"No pospongas nada durante 24 horas. Si algo tarda menos de 2 minutos, hazlo ahora."},
+
+];
+
+const tagColors = {
+  Explorar:{bg:"#1a2a1a",text:"#6abf6a",border:"#2a4a2a"},
+  Estilo:  {bg:"#2a1a2a",text:"#c06abf",border:"#4a2a4a"},
+  Cuerpo:  {bg:"#1a2a2a",text:"#6abfbf",border:"#2a4a4a"},
+  Mente:   {bg:"#2a2a1a",text:"#bfbf6a",border:"#4a4a2a"},
+  Social:  {bg:"#2a1a1a",text:"#bf6a6a",border:"#4a2a2a"},
+  Crear:   {bg:"#1a1a2a",text:"#6a6abf",border:"#2a2a4a"},
+  Comida:  {bg:"#2a1f1a",text:"#bf956a",border:"#4a3a2a"},
+  Reto:    {bg:"#2a2218",text:"#d4a840",border:"#4a3a20"},
+};
+
+const TAG_ORDER = ['Explorar','Cuerpo','Mente','Social','Crear','Comida','Estilo','Reto'];
+
+let currentIdx = null, done = [], filterTag = null, fading = false;
+
+function getPool() {
+  return missions.map((m,i)=>({...m,i})).filter(m=>!done.includes(m.i)&&(filterTag===null||m.t===filterTag));
+}
+
+function renderFilters() {
+  document.getElementById('filters').innerHTML =
+    `<button class="ftag ${filterTag===null?'active':''}" onclick="setFilter(null)">Todas</button>` +
+    TAG_ORDER.map(tag=>`<button class="ftag tag-${tag} ${filterTag===tag?'active':''}" onclick="setFilter('${tag}')">${tag}</button>`).join('');
+}
+
+function renderCard() {
+  const card = document.getElementById('card');
+  const btnNew = document.getElementById('btn-new');
+  const btnDone = document.getElementById('btn-done');
+  const pool = getPool();
+
+  if (currentIdx !== null) {
+    const m = missions[currentIdx];
+    const c = tagColors[m.t];
+    card.style.background = c.bg;
+    card.style.borderColor = c.border;
+    card.innerHTML = `<div class="c-emoji">${m.e}</div><div class="c-tag" style="color:${c.text}">${m.t}</div><div class="c-text">${m.m}</div>`;
+    btnDone.style.display = 'block';
+    btnDone.style.borderColor = c.border;
+    btnDone.style.color = c.text;
+    btnNew.textContent = 'Otra misión';
+  } else {
+    card.style.background = '#191919';
+    card.style.borderColor = '#222';
+    card.innerHTML = `<div class="c-empty">${pool.length===0?'¡Has completado todas las misiones! 🎉':'Pulsa el botón para tu primera misión'}</div>`;
+    btnDone.style.display = 'none';
+    btnNew.textContent = 'Dame una misión';
+  }
+  btnNew.disabled = pool.length===0 && currentIdx===null;
+
+  const total = missions.filter(m=>filterTag===null||m.t===filterTag).length;
+  document.getElementById('count').textContent = done.length>0
+    ? `${done.length} completada${done.length>1?'s':''} · ${pool.length} restantes`
+    : `${total} misiones disponibles`;
+}
+
+function renderDone() {
+  const sec = document.getElementById('done-section');
+  const list = document.getElementById('done-list');
+  if (done.length===0){sec.style.display='none';return;}
+  sec.style.display='block';
+  list.innerHTML = done.slice().reverse().map(i=>`
+    <div class="done-item"><span class="de">${missions[i].e}</span><span class="dt">${missions[i].m}</span></div>`).join('');
+}
+
+function newMission() {
+  if (fading) return;
+  const pool = getPool();
+  if (pool.length===0) return;
+  fading = true;
+  const card = document.getElementById('card');
+  card.classList.add('fade');
+  setTimeout(()=>{
+    const pick = pool[Math.floor(Math.random()*pool.length)];
+    currentIdx = pick.i;
+    renderCard();
+    card.classList.remove('fade');
+    fading = false;
+  }, 250);
+}
+
+function markDone() {
+  if (currentIdx===null) return;
+  done.push(currentIdx);
+  currentIdx = null;
+  renderCard();
+  renderDone();
+}
+
+function setFilter(tag) {
+  filterTag = tag;
+  currentIdx = null;
+  renderFilters();
+  renderCard();
+}
+
+renderFilters();
+renderCard();
+renderDone();
+</script>
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/misiones/sw.js")
+      .then(() => console.log("SW registrado"))
+      .catch(e => console.log("SW error", e));
+  });
+}
+</script>
+</body>
+</html>
